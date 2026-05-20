@@ -28,8 +28,8 @@ except Exception as e:
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app        = Flask(__name__)
-OUTPUT_DIR = Path("output")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = Path("/tmp/output")
+OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 print(f"  API KEY: {'SET (' + str(len(API_KEY)) + ' chars)' if API_KEY else 'MISSING'}")
