@@ -16,9 +16,23 @@ from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file
 import requests
 
-from agents import AGENTS
-from actions.pdf_generator import generate_quote_pdf, generate_sustainability_pdf
-from actions.sheets_logger import SheetsLogger
+try:
+    from agents import AGENTS
+    print("  agents import OK")
+except Exception as e:
+    print(f"  agents import FAILED: {e}")
+
+try:
+    from actions.pdf_generator import generate_quote_pdf, generate_sustainability_pdf
+    print("  pdf_generator import OK")
+except Exception as e:
+    print(f"  pdf_generator import FAILED: {e}")
+
+try:
+    from actions.sheets_logger import SheetsLogger
+    print("  sheets_logger import OK")
+except Exception as e:
+    print(f"  sheets_logger import FAILED: {e}")
 
 app = Flask(__name__)
 OUTPUT_DIR = Path("output")
