@@ -43,10 +43,13 @@ def call_claude(system_prompt: str, user_message: str) -> str:
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_message}],
     }
+    print(f"  Calling Claude API... model: {payload['model']}")
     resp = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers=headers, json=payload, timeout=60,
     )
+    print(f"  Response status: {resp.status_code}")
+    print(f"  Response body: {resp.text[:300]}")
     resp.raise_for_status()
     data = resp.json()
     return "".join(b.get("text", "") for b in data["content"])
