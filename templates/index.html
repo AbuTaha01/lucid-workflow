@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucid Corp — AI Workflow Coordinator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --surface: #ffffff; --surface2: #eeede8;
+    --border: rgba(0,0,0,0.08); --border-md: rgba(0,0,0,0.14);
+    --text: #1a1a14; --muted: #8a8a7a;
+    --green: #2d7a3a; --green-pale: #e8f4ea;
+    --sales: #1a6b8a; --sales-bg: #e6f3f8;
+    --design: #6b4a1a; --design-bg: #f8f2e6;
+    --finance: #2d7a3a; --finance-bg: #e8f4ea;
+    --sustain: #4a1a6b; --sustain-bg: #f2e6f8;
+    --ops: #7a2d2d; --ops-bg: #f8e8e8;
+  }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--text); padding: 0 2rem; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--green); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 800; color: #fff;
+  }
+  .logo-name { color: #fff; font-size: 0.95rem; font-weight: 700; }
+  .logo-sub  { color: rgba(255,255,255,0.4); font-size: 0.68rem; font-family: 'DM Mono', monospace; }
+  .header-badge {
+    background: var(--green); color: #fff; font-size: 0.63rem;
+    font-family: 'DM Mono', monospace; padding: 4px 12px;
+    border-radius: 20px; letter-spacing: 0.07em; text-transform: uppercase;
+  }
+
+  .main { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 60px); }
+
+  .sidebar {
+    background: var(--surface); border-right: 1px solid var(--border-md);
+    padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;
+  }
+  .label { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; }
+
+  .scenario-list { display: flex; flex-direction: column; gap: 6px; }
+  .scenario-btn {
+    display: flex; align-items: flex-start; gap: 8px; padding: 0.65rem 0.75rem;
+    background: var(--bg); border: 1px solid var(--border-md); border-radius: 8px;
+    cursor: pointer; text-align: left; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .scenario-btn:hover { border-color: var(--green); background: var(--green-pale); }
+  .scenario-btn.active { border-color: var(--green); background: var(--green-pale); }
+  .sc-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+  .sc-title { font-size: 0.78rem; font-weight: 600; }
+  .sc-desc  { font-size: 0.67rem; color: var(--muted); margin-top: 1px; }
+
+  .divider { height: 1px; background: var(--border); }
+
+  textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border-md);
+    border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 0.75rem; line-height: 1.65; padding: 0.7rem 0.8rem;
+    resize: vertical; min-height: 120px; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--green); }
+
+  .run-btn {
+    width: 100%; padding: 0.8rem; background: var(--green); border: none;
+    border-radius: 8px; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .run-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .run-btn:hover:not(:disabled) { opacity: 0.88; }
+
+  .reset-btn {
+    width: 100%; padding: 0.55rem; background: transparent;
+    border: 1px solid var(--border-md); border-radius: 8px; color: var(--muted);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--text); }
+
+  /* Agent status sidebar cards */
+  .agent-list { display: flex; flex-direction: column; gap: 5px; }
+  .agent-card {
+    display: flex; align-items: center; gap: 9px; padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+    transition: all 0.3s;
+  }
+  .agent-card.active  { background: var(--surface); }
+  .agent-card.done    { opacity: 0.5; }
+  .agent-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+  .agent-name { font-size: 0.75rem; font-weight: 600; }
+  .agent-role { font-size: 0.61rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .agent-st   { margin-left: auto; font-size: 0.61rem; font-family: 'DM Mono', monospace; color: var(--muted); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 0.9s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* Content */
+  .content { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Pipeline */
+  .pipeline {
+    background: var(--surface); border-bottom: 1px solid var(--border-md);
+    padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0;
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .pipe-node {
+    padding: 4px 13px; border-radius: 20px; border: 1px solid var(--border-md);
+    font-size: 0.67rem; font-family: 'DM Mono', monospace; color: var(--muted);
+    background: var(--bg); white-space: nowrap; transition: all 0.25s; flex-shrink: 0;
+  }
+  .pipe-node.active { font-weight: 600; }
+  .pipe-node.done   { opacity: 0.4; }
+  .pipe-sep { padding: 0 5px; color: var(--muted); font-size: 0.7rem; flex-shrink: 0; }
+
+  /* Outputs */
+  .outputs { flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; overflow-y: auto; }
+
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1rem; color: var(--muted); text-align: center; padding: 3rem;
+  }
+  .empty-icon { width: 52px; height: 52px; border: 2px dashed var(--border-md); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; opacity: 0.5; }
+  .empty-state p { font-size: 0.82rem; max-width: 260px; line-height: 1.6; }
+
+  /* Agent output blocks */
+  .agent-block {
+    background: var(--surface); border: 1px solid var(--border-md);
+    border-radius: 12px; overflow: hidden; animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .block-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+  }
+  .block-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+  .block-name { font-size: 0.8rem; font-weight: 700; }
+  .block-role { font-size: 0.63rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .block-tag  { margin-left: auto; font-size: 0.61rem; font-family: 'DM Mono', monospace; padding: 3px 8px; border-radius: 5px; flex-shrink: 0; }
+
+  .block-body {
+    padding: 1rem; font-family: 'DM Mono', monospace; font-size: 0.75rem;
+    line-height: 1.8; color: var(--text); white-space: pre-wrap; word-break: break-word;
+    min-height: 70px;
+  }
+  .block-body.loading { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+  .dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: dot 1.1s ease-in-out infinite; }
+  .dots span:nth-child(2){animation-delay:.18s} .dots span:nth-child(3){animation-delay:.36s}
+  @keyframes dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+  .block-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 1rem; border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace; font-size: 0.61rem; color: var(--muted);
+    background: var(--bg);
+  }
+
+  .handoff { display: flex; align-items: center; gap: 10px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.67rem; }
+  .handoff::before, .handoff::after { content: ''; flex: 1; height: 1px; background: var(--border-md); }
+
+  /* Action notification */
+  .action-row {
+    display: flex; align-items: center; gap: 10px; padding: 0.6rem 1rem;
+    border-radius: 8px; border: 1px solid var(--border); background: var(--surface);
+    animation: slideIn 0.3s ease;
+  }
+  .action-tag { font-size: 0.62rem; font-family: 'DM Mono', monospace; padding: 2px 8px; border-radius: 4px; font-weight: 600; flex-shrink: 0; }
+  .action-msg { font-size: 0.77rem; color: var(--text); }
+  .action-link { margin-left: auto; font-size: 0.72rem; color: var(--green); font-weight: 600; text-decoration: none; padding: 4px 12px; border: 1px solid var(--green); border-radius: 6px; white-space: nowrap; transition: all 0.15s; }
+  .action-link:hover { background: var(--green-pale); }
+
+  /* Summary */
+  .summary-block {
+    background: var(--surface); border: 2px solid var(--green);
+    border-radius: 12px; overflow: hidden; animation: slideIn 0.4s ease;
+  }
+  .summary-header { background: var(--green); color: #fff; padding: 0.7rem 1rem; font-size: 0.72rem; font-weight: 700; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .summary-cell { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .summary-cell:nth-child(even) { border-right: none; }
+  .summary-label { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .summary-value { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+
+  @media(max-width:720px){ .main{grid-template-columns:1fr} .sidebar{border-right:none;border-bottom:1px solid var(--border-md)} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-mark">LC</div>
+    <div>
+      <div class="logo-name">Lucid Corp</div>
+      <div class="logo-sub">AI Workflow Coordinator</div>
+    </div>
+  </div>
+  <span class="header-badge">Powered by Claude</span>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div>
+      <div class="label">Quick scenarios</div>
+      <div class="scenario-list">
+        <button class="scenario-btn" onclick="loadScenario(0)">
+          <span class="sc-icon">📦</span>
+          <div><div class="sc-title">New B2B order</div><div class="sc-desc">Pet food brand — rPET protein trays</div></div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(1)">
+          <span class="sc-icon">🔧</span>
+          <div><div class="sc-title">Custom tooling request</div><div class="sc-desc">New mould design for produce trays</div></div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(2)">
+          <span class="sc-icon">♻️</span>
+          <div><div class="sc-title">Eco upgrade inquiry</div><div class="sc-desc">Switch existing line to ocean-bound rPET</div></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="label">Order brief</div>
+      <textarea id="briefInput" placeholder="Describe the client inquiry or order..."></textarea>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="run-btn" id="runBtn" onclick="startWorkflow()">▶ &nbsp;Run Workflow</button>
+      <button class="reset-btn" onclick="resetAll()">↺ Reset</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="label">Agent pipeline</div>
+      <div class="agent-list" id="agentList"></div>
+    </div>
+
+  </div>
+
+  <div class="content">
+    <div class="pipeline" id="pipeline"></div>
+    <div class="outputs" id="outputs">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <p>Select a scenario or write a brief, then run the workflow.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCENARIOS = [
+  `New client: Maple & Meadow Pet Co. (Vancouver, BC). Launching a premium wet cat food line — 3 SKUs: 85g, 150g, and 250g formats. Need 500,000 units total. Pad-less, leak-resistant trays required. Retail partners: Sobeys and PetSmart Canada. Want rPET with highest recycled content, one SKU in ocean-bound plastic blend. Custom branding emboss on tray rim. Samples in 6 weeks, full delivery in 14 weeks. Budget: $190,000 CAD. Need sustainability data sheet for Sobeys supplier portal. Asking about EU compliance for 2026 expansion.`,
+  `Existing client: GreenLeaf Produce Co. (Mississauga, ON). Requesting a new custom thermoforming mould for a 500g clamshell produce tray — current supplier can't handle the depth spec. Want in-house R&D involvement. Tooling budget: $22,000 CAD. Need 3 prototype samples within 6 weeks before committing to 150,000-unit run.`,
+  `Existing client: PawsFirst Organics. Currently on standard PET trays. Want to transition full product line (4 SKUs, ~300,000 units/year) to ocean-bound rPET blend. Retail partner Whole Foods Canada requires a sustainability data sheet. Need cost comparison vs current PET and updated artwork templates.`
+];
+
+const AGENTS = [
+  { id:'sales',         name:'Sales & Client Services', role:'Intake · CRM · Priority',      icon:'🤝', color:'#1a6b8a', bg:'#e6f3f8', tag:'INTAKE'     },
+  { id:'design',        name:'Design & Engineering',    role:'Feasibility · Tooling · R&D',  icon:'⚙️',  color:'#6b4a1a', bg:'#f8f2e6', tag:'FEASIBILITY' },
+  { id:'finance',       name:'Finance & Quoting',       role:'Costing · Margins · Approval', icon:'💰', color:'#2d7a3a', bg:'#e8f4ea', tag:'QUOTE'       },
+  { id:'sustainability',name:'Sustainability',           role:'Eco Cert · Risk · Reporting',  icon:'♻️',  color:'#4a1a6b', bg:'#f2e6f8', tag:'CERTIFY'     },
+  { id:'operations',    name:'Operations & Logistics',  role:'Scheduling · Delivery · QC',   icon:'🚚', color:'#7a2d2d', bg:'#f8e8e8', tag:'EXECUTE'     },
+  { id:'coordinator',   name:'Project Coordinator',     role:'Governance · Risk · Milestones',icon:'📋', color:'#1a1a8a', bg:'#e6e6f8', tag:'GOVERN'      },
+];
+
+let running = false;
+let pollInterval = null;
+let currentRunId = null;
+
+function init() {
+  // Build agent sidebar
+  document.getElementById('agentList').innerHTML = AGENTS.map(a => `
+    <div class="agent-card" id="card-${a.id}">
+      <div class="agent-icon" style="background:${a.bg};color:${a.color}">${a.icon}</div>
+      <div><div class="agent-name">${a.name}</div><div class="agent-role">${a.role}</div></div>
+      <div class="agent-st" id="st-${a.id}">idle</div>
+    </div>`).join('');
+
+  // Build pipeline bar
+  document.getElementById('pipeline').innerHTML = AGENTS.map((a,i) => `
+    <div class="pipe-node" id="pipe-${a.id}">${a.name.split(' ')[0]}</div>
+    ${i < AGENTS.length-1 ? '<div class="pipe-sep">›</div>' : ''}`).join('');
+}
+
+function loadScenario(i) {
+  document.getElementById('briefInput').value = SCENARIOS[i];
+  document.querySelectorAll('.scenario-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+}
+
+function setAgentStatus(id, status) {
+  const a    = AGENTS.find(a => a.id === id);
+  const card = document.getElementById(`card-${id}`);
+  const st   = document.getElementById(`st-${id}`);
+  const pipe = document.getElementById(`pipe-${id}`);
+  if (status === 'running') {
+    st.innerHTML   = `<div class="pulse" style="color:${a.color}"></div><span style="color:${a.color}">active</span>`;
+    card.style.borderColor = a.color + '55';
+    card.classList.add('active');
+    pipe.style.color       = a.color;
+    pipe.style.borderColor = a.color + '99';
+    pipe.style.background  = a.bg;
+    pipe.classList.add('active');
+  } else if (status === 'done') {
+    st.innerHTML = `<span style="color:${a.color}">✓ done</span>`;
+    card.classList.remove('active'); card.classList.add('done');
+    pipe.classList.remove('active'); pipe.classList.add('done');
+    pipe.style.color = pipe.style.borderColor = pipe.style.background = '';
+  } else {
+    st.innerHTML = `<span>idle</span>`;
+    card.style.borderColor = '';
+    card.classList.remove('active','done');
+  }
+}
+
+function addBlock(agent) {
+  const out   = document.getElementById('outputs');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  if (out.querySelector('.agent-block,.action-row')) {
+    const h = document.createElement('div');
+    h.className = 'handoff';
+    h.textContent = `↓ handoff to ${agent.name}`;
+    out.appendChild(h);
+  }
+  const div = document.createElement('div');
+  div.className = 'agent-block';
+  div.id = `block-${agent.id}`;
+  div.innerHTML = `
+    <div class="block-header" style="background:${agent.bg}88">
+      <div class="block-icon" style="background:${agent.bg};color:${agent.color}">${agent.icon}</div>
+      <div><div class="block-name" style="color:${agent.color}">${agent.name}</div><div class="block-role">${agent.role}</div></div>
+      <span class="block-tag" style="background:${agent.bg};color:${agent.color}">${agent.tag}</span>
+    </div>
+    <div class="block-body loading" id="body-${agent.id}">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <span style="font-size:0.73rem">Agent processing...</span>
+    </div>
+    <div class="block-footer">
+      <span>${agent.id}@lucidcorp.com</span>
+      <span id="timer-${agent.id}">—</span>
+    </div>`;
+  out.appendChild(div);
+  setTimeout(() => div.scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
+}
+
+function fillBlock(agent, output, elapsed) {
+  const body  = document.getElementById(`body-${agent.id}`);
+  const timer = document.getElementById(`timer-${agent.id}`);
+  body.className   = 'block-body';
+  body.textContent = output;
+  timer.textContent = `${elapsed}s`;
+}
+
+function addActionRow(tag, msg, linkText, linkHref, color, bg) {
+  const out = document.getElementById('outputs');
+  const div = document.createElement('div');
+  div.className = 'action-row';
+  div.innerHTML = `
+    <span class="action-tag" style="background:${bg};color:${color}">${tag}</span>
+    <span class="action-msg">${msg}</span>
+    ${linkText ? `<a class="action-link" href="${linkHref}" target="_blank">${linkText} ↗</a>` : ''}`;
+  out.appendChild(div);
+}
+
+function addSummary(data) {
+  const out = document.getElementById('outputs');
+  const div = document.createElement('div');
+  div.className = 'summary-block';
+  div.innerHTML = `
+    <div class="summary-header">🌿 Workflow Complete — Lucid Corp</div>
+    <div class="summary-grid">
+      <div class="summary-cell"><div class="summary-label">Agents run</div><div class="summary-value">5 of 5</div></div>
+      <div class="summary-cell"><div class="summary-label">Status</div><div class="summary-value" style="color:#2d7a3a">ORDER ACCEPTED</div></div>
+      <div class="summary-cell"><div class="summary-label">Quote PDF</div><div class="summary-value">${data.files.quote ? '✓ Generated' : '—'}</div></div>
+      <div class="summary-cell"><div class="summary-label">Sustainability PDF</div><div class="summary-value">${data.files.sustainability ? '✓ Generated' : '—'}</div></div>
+      <div class="summary-cell" style="grid-column:1/-1"><div class="summary-label">Google Sheets</div><div class="summary-value">${data.sheets_url ? '✓ Order logged' : 'Simulation mode'}</div></div>
+    </div>`;
+  out.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function startWorkflow() {
+  if (running) return;
+  const brief = document.getElementById('briefInput').value.trim();
+  if (!brief) { document.getElementById('briefInput').focus(); return; }
+
+  running = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('outputs').innerHTML = '';
+
+  // Start run on server
+  const resp = await fetch('/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({brief}),
+  });
+  const {run_id, error} = await resp.json();
+  if (error) {
+    document.getElementById('outputs').innerHTML = `<div style="padding:1rem;color:red;font-family:monospace;font-size:0.8rem">Error: ${error}</div>`;
+    running = false;
+    document.getElementById('runBtn').disabled = false;
+    return;
+  }
+
+  currentRunId = run_id;
+  const rendered = new Set();
+  const actionsShown = new Set();
+
+  // Poll for status every 800ms
+  pollInterval = setInterval(async () => {
+    const r    = await fetch(`/status/${run_id}`);
+    const data = await r.json();
+
+    // Render new agent results
+    for (const agent of AGENTS) {
+      const aData = data.agents[agent.id];
+      if (!aData) continue;
+      if (!rendered.has(agent.id + '_start')) {
+        rendered.add(agent.id + '_start');
+        setAgentStatus(agent.id, 'running');
+        addBlock(agent);
+      }
+      if (aData.status === 'done' && !rendered.has(agent.id + '_done')) {
+        rendered.add(agent.id + '_done');
+        fillBlock(agent, aData.output, aData.elapsed);
+        setAgentStatus(agent.id, 'done');
+      }
+    }
+
+    // Show action rows when files appear
+    if (data.files.quote && !actionsShown.has('quote')) {
+      actionsShown.add('quote');
+      addActionRow('PDF', 'Quote PDF generated', 'Download Quote', `/download/${run_id}/quote`, '#2d7a3a', '#e8f4ea');
+    }
+    if (data.files.sustainability && !actionsShown.has('sustain')) {
+      actionsShown.add('sustain');
+      addActionRow('PDF', 'Sustainability data sheet generated', 'Download Sheet', `/download/${run_id}/sustainability`, '#4a1a6b', '#f2e6f8');
+    }
+    if (data.sheets_url && !actionsShown.has('sheets')) {
+      actionsShown.add('sheets');
+      const isReal = !data.sheets_url.includes('SIMULATED');
+      addActionRow(
+        'SHEETS',
+        isReal ? 'Order logged to Google Sheets' : 'Google Sheets (simulation mode — see setup guide)',
+        isReal ? 'Open Sheet' : null,
+        data.sheets_url,
+        '#1a6b8a', '#e6f3f8'
+      );
+    }
+
+    // Done or error
+    if (data.status === 'complete') {
+      clearInterval(pollInterval);
+      addSummary(data);
+      running = false;
+      document.getElementById('runBtn').disabled = false;
+    } else if (data.status === 'error') {
+      clearInterval(pollInterval);
+      document.getElementById('outputs').insertAdjacentHTML('beforeend',
+        `<div style="padding:1rem;color:#c0392b;font-family:monospace;font-size:0.78rem;border:1px solid #f5c6cb;border-radius:8px;background:#fdf0f0">⚠ Error: ${data.error}</div>`);
+      running = false;
+      document.getElementById('runBtn').disabled = false;
+    }
+  }, 800);
+}
+
+function resetAll() {
+  if (running) return;
+  if (pollInterval) clearInterval(pollInterval);
+  currentRunId = null;
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('outputs').innerHTML = `
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <p>Select a scenario or write a brief, then run the workflow.</p>
+    </div>`;
+  AGENTS.forEach(a => {
+    setAgentStatus(a.id, 'idle');
+    const pipe = document.getElementById(`pipe-${a.id}`);
+    pipe.style.color = pipe.style.borderColor = pipe.style.background = '';
+    pipe.classList.remove('active','done');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
