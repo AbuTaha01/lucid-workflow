@@ -25,6 +25,7 @@ OUTPUT_DIR = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+print(f"  API KEY STATUS: {'SET (' + str(len(API_KEY)) + ' chars)' if API_KEY else 'NOT SET - MISSING'}")
 
 # Store active workflow results in memory
 workflow_store = {}
