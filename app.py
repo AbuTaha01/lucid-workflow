@@ -80,6 +80,15 @@ def run_workflow():
     if not API_KEY:
         return jsonify({"error": "ANTHROPIC_API_KEY not set on server"}), 500
 
+    # Test Claude API directly before starting thread
+    try:
+        print("  [TEST] Testing Claude API call directly...")
+        test_result = call_claude("You are a test.", "Say OK")
+        print(f"  [TEST] Claude API works: {test_result[:50]}")
+    except Exception as e:
+        print(f"  [TEST] Claude API failed: {e}")
+        return jsonify({"error": f"Claude API error: {e}"}), 500
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_id    = timestamp
 
