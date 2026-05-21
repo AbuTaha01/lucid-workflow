@@ -244,5 +244,5 @@ def _run_thread(run_id: str, brief: str, timestamp: str):
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n  🌿 Lucid Corp AI Workflow — port {port}\n")
+    print(f"LUCID STARTUP v3: port={port} key={'SET' if API_KEY else 'MISSING'}")
     app.run(debug=False, host="0.0.0.0", port=port, threaded=True)
