@@ -48,6 +48,28 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/test")
+def test():
+    try:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 50,
+                "messages": [{"role": "user", "content": "Say hello"}],
+            },
+            timeout=30,
+        )
+        return jsonify({"status": resp.status_code, "body": resp.json()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/run", methods=["POST"])
 def run_workflow():
     data  = request.get_json()
